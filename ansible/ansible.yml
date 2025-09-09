@@ -1,0 +1,19 @@
+---
+- name: Deploy Docker container
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Stop existing container if exists
+      community.docker.docker_container:
+        name: demo-app
+        state: absent
+
+    - name: Run new container
+      community.docker.docker_container:
+        name: demo-app
+        image: demo-app:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "5000:5000"
