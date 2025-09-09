@@ -1,0 +1,11 @@
+- name: Deploy Docker container
+  hosts: app_servers
+  tasks:
+    - name: Ensure Docker container is running
+      community.docker.docker_container:
+        name: ci_cd_demo_app
+        image: yourusername/ci-cd-demo:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:8080"
