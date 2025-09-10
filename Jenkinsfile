@@ -2,37 +2,41 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "demo-app"
-        DOCKER_REGISTRY = ""   // Empty for local demo
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')  // we'll add this next
+        DOCKER_IMAGE = "yourdockerhubusername/myapp:${BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/<username>/demo-ci-cd.git'
+                git branch: 'main',
+                    credentialsId: 'github-pat',
+                    url: 'https://github.com/<your-username>/<your-repo>.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${IMAGE_NAME}:latest")
+                    sh "docker build -t $DOCKER_IMAGE ."
                 }
             }
         }
 
-        stage('Deploy via Ansible') {
+        stage('Push to DockerHub') {
             steps {
-                ansiblePlaybook(
-                    playbook: 'ansible/deploy.yml'
-                )
+                script {
+                    withDockerRegistry([credentialsId: 'dockerhub-creds', url: 'https://index.docker.io/v1/']) {
+                        sh "docker push $DOCKER_IMAGE"
+                    }
+                }
             }
         }
-    }
 
-    post {
-        always {
-            cleanWs()
+        stage('Deploy with Ansible') {
+            steps {
+                sh 'ansible-playbook -i inventory deploy.yml'
+            }
         }
     }
 }
